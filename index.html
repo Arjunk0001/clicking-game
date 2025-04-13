@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <title>Pro Click Master - Leaderboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            background-image: 
+                radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+        }
+
+        .game-container {
+            background: #111111;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 100, 0.1);
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            border: 1px solid #1a1a1a;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .game-title {
+            font-size: 2.5em;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+            margin-bottom: 1rem;
+        }
+
+        .click-area {
+            background: #1a1a1a;
+            height: 300px;
+            border-radius: 10px;
+            margin: 2rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+            border: 2px solid #252525;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .click-area:active {
+            transform: scale(0.98);
+        }
+
+        .click-area::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, 
+                rgba(0, 255, 136, 0.1) 0%, 
+                transparent 70%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .click-area.active::after {
+            animation: clickEffect 0.4s;
+        }
+
+        @keyframes clickEffect {
+            0% { opacity: 1; transform: scale(0); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-box {
+            background: #1a1a1a;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #252525;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .leaderboard {
+            background: #111111;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 2rem;
+            border: 1px solid #252525;
+        }
+
+        .leaderboard-title {
+            color: #00ff88;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            background: #1a1a1a;
+            border-radius: 8px;
+            animation: entrySlide 0.3s ease-out;
+        }
+
+        @keyframes entrySlide {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .start-btn {
+            background: #00ff88;
+            color: #111;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 1rem auto;
+            display: block;
+        }
+
+        .start-btn:hover {
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">PRO CLICK MASTER</h1>
+            <button class="start-btn" onclick="startGame()">START CHALLENGE</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div>TIME LEFT</div>
+                <div class="stat-value" id="timer">0.00s</div>
+            </div>
+            <div class="stat-box">
+                <div>YOUR SCORE</div>
+                <div class="stat-value" id="score">0</div>
+            </div>
+        </div>
+
+        <div class="click-area" id="clickArea" onclick="addClick()">
+            <h2>CLICK FAST!</h2>
+        </div>
+
+        <div class="leaderboard">
+            <h2 class="leaderboard-title">TOP PLAYERS</h2>
+            <div id="leaderboardEntries"></div>
+        </div>
+    </div>
+
+    <script>
+        let clicks = 0;
+        let timeLeft = 5;
+        let isGameActive = false;
+        let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+
+        function updateLeaderboard() {
+            const entries = document.getElementById('leaderboardEntries');
+            entries.innerHTML = '';
+            
+            leaderboard.sort((a, b) => b.score - a.score)
+                      .slice(0, 5)
+                      .forEach((entry, index) => {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'leaderboard-entry';
+                entryDiv.innerHTML = `
+                    <div>#${index + 1} ${entry.name || 'Anonymous'}</div>
+                    <div>${entry.score} CPS</div>
+                `;
+                entries.appendChild(entryDiv);
+            });
+        }
+
+        function startGame() {
+            if(isGameActive) return;
+            
+            clicks = 0;
+            timeLeft = 5;
+            isGameActive = true;
+            document.getElementById('score').textContent = '0';
+            document.getElementById('clickArea').classList.add('active');
+            
+            const timerInterval = setInterval(() => {
+                timeLeft = (timeLeft - 0.1).toFixed(1);
+                document.getElementById('timer').textContent = `${timeLeft}s`;
+                
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+            }, 100);
+        }
+
+        function addClick() {
+            if(!isGameActive) return;
+            
+            clicks++;
+            document.getElementById('score').textContent = clicks;
+            document.getElementById('clickArea').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('clickArea').classList.remove('active');
+            }, 100);
+        }
+
+        function endGame() {
+            isGameActive = false;
+            const cps = (clicks / 5).toFixed(1);
+            
+            const playerName = prompt(`Game Over!\nYour Score: ${cps} CPS\nEnter your name:`);
+            
+            leaderboard.push({
+                name: playerName || 'Anonymous',
+                score: cps
+            });
+            
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+            updateLeaderboard();
+            document.getElementById('timer').textContent = '0.00s';
+        }
+
+        // Initial leaderboard load
+        updateLeaderboard();
+    </script>
+</body>
+</html>
